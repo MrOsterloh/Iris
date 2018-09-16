@@ -1,0 +1,109 @@
+
+# encrypting
+"""
+1. Check if en
+
+
+"""
+# 1 check if encrypted exits ()
+
+
+import os
+import pyAesCrypt
+
+
+bib_name = 'Iris'
+bufferSize = 64 * 1024
+
+pw = "TestTestTest)"
+
+def dir_decrypt(key):
+    # ToDo: git download newest State
+    # ToDo: copy __start__ to base dir and delete it
+    # ToDo: run dir_decrypt
+    # get current dir Name
+    base_dir = os.sep.join(os.path.realpath(__file__).split(os.sep)[:-1])
+    bib_dir = base_dir + os.sep + bib_name
+
+    blacklist = [os.path.realpath(__file__).split(os.sep)[-1], 'README.md', bib_name]
+
+    def walker(path):
+        for entry in os.scandir(path):
+            if entry.is_dir(follow_symlinks=False):
+                dec_dir = entry.path.replace(bib_dir, base_dir)
+                if not os.path.exists(dec_dir):
+                    os.mkdir(entry.path.replace(bib_dir, base_dir))
+                walker(entry.path)
+
+            elif entry.name not in blacklist:
+                # file is genuine
+                file_path = entry.path.replace(bib_dir, base_dir)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                print('decrypt file %s' % entry.path)
+                pyAesCrypt.decryptFile(entry.path, file_path, pw, bufferSize)
+
+    # check if bib_dir truly exists:
+    if os.path.exists(bib_dir):
+        walker(bib_dir)
+    else:
+        print("Bib dir does not exists ... decryp abbandoned")
+        return 1
+
+
+
+
+
+def dir_encrypt(key):
+
+    # get current dir Name
+    base_dir = os.sep.join(os.path.realpath(__file__).split(os.sep)[:-1])
+    bib_dir = base_dir + os.sep + bib_name
+
+    # search if bib name exits
+
+    if os.path.exists(base_dir + os.sep + bib_name):
+        # clear current dataset
+        def walker(path):
+            for entry in os.scandir(path):
+                if entry.is_dir():
+                    walker(entry.path)
+                    os.rmdir(entry.path)
+                else:
+                    os.remove(entry.path)
+        walker(bib_dir)
+    else:
+        os.mkdir(bib_dir)
+
+    # encrypt every file in the current dir
+    blacklist = [os.path.realpath(__file__).split(os.sep)[-1], bib_name]
+
+    def walker(path):
+        for entry in os.scandir(path):
+            if entry.is_dir(follow_symlinks=False):
+                if entry.name not in blacklist and not entry.name.startswith('.'):
+                    # genuine dir
+                    enc_dir = entry.path.replace(base_dir, bib_dir)
+                    if not os.path.exists(enc_dir):
+                        os.mkdir(entry.path.replace(base_dir, bib_dir))
+                    walker(entry.path)
+            elif entry.name not in blacklist:
+                print("encrypt file %s" % entry.path)
+                pyAesCrypt.encryptFile(entry.path, entry.path.replace(base_dir, bib_dir), pw, bufferSize)
+
+    walker(base_dir)
+
+    # coppy current "__start__" to repo
+    os.system('copy "%s" "%s" ' %(__file__, os.path.realpath(__file__).replace(base_dir, bib_dir)))
+
+    # add Readme.md commit and push to git
+    with open(bib_dir +os.sep + 'README.md', 'w+') as readme:
+        readme.write('# Iris')
+    # ToDo: commit push
+
+
+if __name__ == "__main__":
+    dir_encrypt("halloDu")
+    dir_decrypt("halloDu")
+
+
